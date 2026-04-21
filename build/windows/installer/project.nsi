@@ -70,8 +70,9 @@ ManifestDPIAware true
 !insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
-!uninstfinalize 'signtool --file "%1"'
-!finalize 'signtool --file "%1"'
+## Signing is handled by the CI workflow's PowerShell signtool step after the installer is built.
+;!uninstfinalize 'signtool --file "%1"'
+;!finalize 'signtool --file "%1"'
 
 Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the installer's file.

@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.6.1)'
+        required: true
 
 permissions:
   contents: write
@@ -27,16 +32,22 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      - name: Set up MSYS2 / MinGW (CGo + NSIS)
+      - name: Set up MSYS2 / MinGW (CGo)
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-nsis
+          install: mingw-w64-x86_64-gcc
           update: false
 
       - name: Add MinGW to PATH
         run: echo "C:/msys64/mingw64/bin" >> $GITHUB_PATH
         shell: bash
+
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          Add-Content $env:GITHUB_PATH "C:\Program Files (x86)\NSIS"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -54,7 +65,9 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          REF="${{ inputs.tag || github.ref_name }}"
+          echo "VERSION=${REF#v}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Set version in wails.json
@@ -88,6 +101,7 @@ jobs:
         with:
           name: windows-installer
           path: build/bin/Masterboard-amd64-installer.exe
+          if-no-files-found: error
 
   build-macos:
     name: macOS DMG
@@ -103,7 +117,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache: true
+          cache: false
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -124,10 +138,22 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          REF="${{ inputs.tag || github.ref_name }}"
+          echo "VERSION=${REF#v}" >> $GITHUB_OUTPUT
+
+      - name: Set version in wails.json
+        run: |
+          sed -i '' 's/"productVersion": ".*"/"productVersion": "${{ steps.version.outputs.VERSION }}"/' wails.json
 
       - name: Build macOS app
         run: wails build -platform darwin/universal -ldflags "-X github.com/IntermezzoSoftware/Masterboard/internal/version.Current=${{ steps.version.outputs.VERSION }}"
+
+      - name: Verify app bundle was built
+        run: |
+          test -d build/bin/Masterboard.app || { echo "ERROR: Masterboard.app not found after build"; exit 1; }
+          test -f build/bin/Masterboard.app/Contents/MacOS/Masterboard || { echo "ERROR: Masterboard binary not found inside app bundle"; exit 1; }
+          echo "App bundle verified: $(du -sh build/bin/Masterboard.app | cut -f1)"
 
       - name: Codesign app (if cert available)
         if: env.APPLE_TEAM_ID != ''
@@ -190,8 +216,13 @@ jobs:
           sudo apt-get install -y \
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
+            libfuse2 \
             pkg-config \
             gcc
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc \
+            /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.1.pc \
+            /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.0.pc
 
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@${{ env.WAILS_VERSION }}
@@ -202,7 +233,9 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          REF="${{ inputs.tag || github.ref_name }}"
+          echo "VERSION=${REF#v}" >> $GITHUB_OUTPUT
 
       - name: Build Linux binary
         run: wails build -platform linux/amd64 -tags webkit2_4_1 -ldflags "-X github.com/IntermezzoSoftware/Masterboard/internal/version.Current=${{ steps.version.outputs.VERSION }}"
@@ -222,9 +255,15 @@ jobs:
             cp -r build/bin/engines AppDir/usr/bin/engines
           fi
           chmod +x AppDir/usr/bin/Masterboard
-          cp build/appicon.png AppDir/masterboard.png
+          cp build/appicon.png AppDir/io.masterboard.app.png
           cp build/linux/flatpak/io.masterboard.app.desktop AppDir/Masterboard.desktop
-          printf '#!/bin/bash\nSELF=$(readlink -f "$0")\nHERE=${SELF%/*}\nexport PATH="$HERE/usr/bin:$PATH"\nexec "$HERE/usr/bin/Masterboard" "$@"\n' > AppDir/AppRun
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          export PATH="$HERE/usr/bin:$PATH"
+          exec "$HERE/usr/bin/Masterboard" "$@"
+          EOF
           chmod +x AppDir/AppRun
           ARCH=x86_64 ./appimagetool AppDir "build/bin/Masterboard-x86_64.AppImage"
 
@@ -248,7 +287,10 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          REF="${{ inputs.tag || github.ref_name }}"
+          echo "VERSION=${REF#v}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Extract release notes from CHANGELOG
         run: |
@@ -257,10 +299,11 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           name: Masterboard v${{ steps.version.outputs.VERSION }}
           draft: true
           body_path: /tmp/release-notes.md
           files: |
             artifacts/windows-installer/Masterboard-amd64-installer.exe
-            artifacts/macos-dmg/Masterboard-${{ steps.version.outputs.VERSION }}-mac.dmg
+            artifacts/macos-dmg/*.dmg
             artifacts/linux-appimage/Masterboard-x86_64.AppImage

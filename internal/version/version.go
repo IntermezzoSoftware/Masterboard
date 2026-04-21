@@ -6,4 +6,4 @@ package version
 
 // Current is the running application version. Default is the development
 // snapshot; CI injects the real tag at link time.
-var Current = "0.6.1"
+var Current = "v0.6.2"
