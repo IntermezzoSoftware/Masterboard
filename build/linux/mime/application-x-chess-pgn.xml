@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-chess-pgn">
+    <comment>Portable Game Notation chess file</comment>
+    <glob pattern="*.pgn"/>
+    <glob pattern="*.PGN"/>
+    <icon name="application-x-chess-pgn"/>
+  </mime-type>
+</mime-info>

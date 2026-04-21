@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Masterboard
+GenericName=Chess Application
+Comment=A desktop chess application for serious players
+Exec=Masterboard %f
+Icon=io.masterboard.app
+Terminal=false
+Type=Application
+Categories=Game;BoardGame;
+MimeType=application/x-chess-pgn;x-scheme-handler/io.masterboard.app;
+Keywords=chess;analysis;opening;repertoire;tactics;
+StartupNotify=true

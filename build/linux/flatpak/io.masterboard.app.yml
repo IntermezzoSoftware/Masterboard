@@ -1,0 +1,56 @@
+# Flatpak manifest for Masterboard
+# Submit this file to https://github.com/flathub/io.masterboard.app for Flathub listing.
+#
+# Build locally:
+#   flatpak-builder --force-clean build-dir io.masterboard.app.yml
+#   flatpak-builder --run build-dir io.masterboard.app.yml Masterboard
+#
+# Prerequisites:
+#   flatpak install flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
+
+app-id: io.masterboard.app
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: Masterboard
+
+finish-args:
+  # Network access: for engine download, Lichess/Chess.com import, auto-update check
+  - --share=network
+  # X11 + XShm (fallback for Wayland)
+  - --share=ipc
+  - --socket=fallback-x11
+  # Wayland native
+  - --socket=wayland
+  # Home directory access: for importing PGN files, locating engines on PATH
+  - --filesystem=home
+  # GPU access for WebView2/WebKit rendering
+  - --device=dri
+  # Allow opening URLs in the system browser
+  - --talk-name=org.freedesktop.portal.Desktop
+
+modules:
+  - name: masterboard
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 Masterboard /app/bin/Masterboard
+      - |
+        if [ -d engines ]; then
+          cp -r engines /app/bin/engines
+        fi
+      - install -Dm644 io.masterboard.app.desktop /app/share/applications/io.masterboard.app.desktop
+      - install -Dm644 masterboard.png /app/share/icons/hicolor/256x256/apps/io.masterboard.app.png
+
+    sources:
+      # The Masterboard binary is produced by `wails build -platform linux/amd64`.
+      # In a real Flathub submission, this would reference a tagged release asset URL.
+      # For local testing, build the binary first then run flatpak-builder.
+      - type: file
+        path: ../../../build/bin/Masterboard
+
+      - type: file
+        path: ../../../build/linux/flatpak/io.masterboard.app.desktop
+
+      - type: file
+        path: ../../../build/appicon.png
+        dest-filename: masterboard.png

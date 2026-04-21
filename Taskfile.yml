@@ -1,0 +1,190 @@
+version: '3'
+
+# Masterboard top-level task runner.
+#
+# Install once:  go install github.com/go-task/task/v3/cmd/task@latest
+# List tasks:    task --list
+#
+# Tasks are thin wrappers around the underlying tool chains (wails, go, npm).
+# Each task sets `dir:` where appropriate so you can run every task from the
+# repo root without `cd`-ing into subdirectories.
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list --sort=none
+    silent: true
+
+  # --- Development ---------------------------------------------------------
+
+  dev:
+    desc: Wails dev server — Go + React hot reload
+    cmds:
+      - wails dev
+
+  version:
+    desc: "Bump version across all version files. Usage: task version -- 1.2.3"
+    cmds:
+      - 'echo {{.CLI_ARGS}} > VERSION'
+      - 'sed -i ''s/"productVersion": ".*"/"productVersion": "{{.CLI_ARGS}}"/'' wails.json'
+      - 'sed -i ''s/var Current = ".*"/var Current = "{{.CLI_ARGS}}"/'' internal/version/version.go'
+
+  install:
+    desc: Install frontend and website dependencies
+    deps: [install:fe, install:web]
+
+  install:fe:
+    desc: Install frontend dependencies
+    dir: frontend
+    cmds:
+      - npm install
+
+  install:web:
+    desc: Install website dependencies
+    dir: website
+    cmds:
+      - npm install
+
+  generate:pieces:
+    desc: "Regenerate piece set CSS and previews.ts from vendored SVGs in frontend/vendor/pieces/"
+    dir: frontend
+    cmds:
+      - npx tsx scripts/generate-pieces.ts
+
+  # --- Build ---------------------------------------------------------------
+
+  build:
+    desc: Production binary → build/bin/Masterboard.exe
+    cmds:
+      - wails build
+
+  build:perf:
+    desc: Instrumented binary with -tags perf (for the perf harness)
+    cmds:
+      - wails build -tags perf
+
+  icons:win:
+    desc: Generate Windows .ico files from PNG sources (requires ImageMagick)
+    cmds:
+      - magick build/appicon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/icon.ico
+      - magick build/appicon-light.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/installer-icon.ico
+      - magick build/pgn-icon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/pgn-icon.ico
+
+  build:win:
+    desc: Windows production binary (amd64, current platform)
+    cmds:
+      - wails build -platform windows/amd64
+
+  build:win:installer:
+    desc: Windows NSIS installer → build/bin/Masterboard-amd64-installer.exe
+    deps: [icons:win]
+    cmds:
+      - wails build -platform windows/amd64 -nsis
+
+  build:mac:
+    desc: macOS universal binary (.app bundle, amd64+arm64) — run on macOS
+    cmds:
+      - wails build -platform darwin/universal
+
+  build:mac:dmg:
+    desc: macOS DMG → build/bin/Masterboard-<version>-mac.dmg (run on macOS, requires brew install create-dmg)
+    deps: [build:mac]
+    cmds:
+      - |
+        create-dmg \
+          --volname "Masterboard" \
+          --window-pos 200 120 \
+          --window-size 600 300 \
+          --icon-size 100 \
+          --icon "Masterboard.app" 175 120 \
+          --hide-extension "Masterboard.app" \
+          --app-drop-link 425 120 \
+          "build/bin/Masterboard-$(cat VERSION | tr -d '[:space:]')-mac.dmg" \
+          "build/bin/Masterboard.app"
+
+  build:linux:
+    desc: Linux binary (amd64) — run on Linux
+    cmds:
+      - wails build -platform linux/amd64
+
+  build:linux:appimage:
+    desc: Linux AppImage → build/bin/Masterboard-x86_64.AppImage (run on Linux, requires appimagetool on PATH)
+    deps: [build:linux]
+    cmds:
+      - mkdir -p AppDir/usr/bin
+      - cp build/bin/Masterboard AppDir/usr/bin/Masterboard
+      - 'if [ -d build/bin/engines ]; then cp -r build/bin/engines AppDir/usr/bin/engines; fi'
+      - chmod +x AppDir/usr/bin/Masterboard
+      - cp build/appicon.png AppDir/masterboard.png
+      - cp build/linux/flatpak/io.masterboard.app.desktop AppDir/Masterboard.desktop
+      - |
+        cat > AppDir/AppRun << 'APPRUN'
+        #!/bin/bash
+        SELF=$(readlink -f "$0")
+        HERE=${SELF%/*}
+        export PATH="$HERE/usr/bin:$PATH"
+        exec "$HERE/usr/bin/Masterboard" "$@"
+        APPRUN
+      - chmod +x AppDir/AppRun
+      - ARCH=x86_64 appimagetool AppDir build/bin/Masterboard-x86_64.AppImage
+
+  # --- Test ----------------------------------------------------------------
+
+  test:
+    desc: Go tests (no build tags)
+    cmds:
+      - go test . ./cmd/... ./internal/...
+
+  test:perf:
+    desc: Go tests with -tags perf (verifies instrumentation doesn't break anything)
+    cmds:
+      - go test -tags perf . ./cmd/... ./internal/...
+
+  test:fe:
+    desc: Vitest unit + integration tests
+    dir: frontend
+    cmds:
+      - npm test -- --run
+
+  e2e:
+    desc: Playwright E2E tests (mocked IPC against Vite dev server)
+    dir: frontend
+    cmds:
+      - npm run test:e2e
+
+  # --- Performance harness -------------------------------------------------
+
+  perf:
+    desc: Real-binary perf scenarios — builds instrumented binary, runs CDP-driven Playwright tests (Windows only)
+    deps: [build:perf]
+    dir: frontend
+    cmds:
+      - npx playwright test --config=perf/playwright.perf.config.ts
+
+  perf:fe:
+    desc: Frontend-only perf scenarios — Vite preview + mocked IPC (any platform)
+    dir: frontend
+    cmds:
+      - npm run perf:fe
+
+  perf:fixtures:
+    desc: Regenerate checked-in perf fixtures (small.pgn + masterdb-small/) — requires build:perf first
+    deps: [build:perf]
+    dir: frontend
+    cmds:
+      - npm run perf:fixtures
+
+  # --- Website -------------------------------------------------------------
+
+  web:dev:
+    desc: Astro dev server for the marketing site
+    dir: website
+    cmds:
+      - npm run dev
+
+  web:build:
+    desc: Build the static website → website/dist
+    dir: website
+    cmds:
+      - npm run build

@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+/* Dark mode: toggled by .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Self-hosted fonts ─────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Figtree";
+  src: url("./assets/fonts/Figtree-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Figtree";
+  src: url("./assets/fonts/Figtree-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Figtree";
+  src: url("./assets/fonts/Figtree-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Typography */
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 0.8125rem;       /* 13px (default 12px) */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;       /* 15px (default 14px) */
+  --text-sm--line-height: 1.375rem;
+  --text-14: 0.875rem;                 /* 14px — move list, eval score, panel empty-state */
+  --text-14--line-height: 1.25rem;
+  --font-mono: "JetBrains Mono", ui-monospace, "Fira Code", Consolas, monospace;
+
+  /* Light mode surfaces — slate-neutral, cool and professional */
+  --color-surface-0: oklch(97% 0.002 264);    /* page background */
+  --color-surface-1: oklch(95% 0.003 264);    /* card background */
+  --color-surface-2: oklch(93% 0.005 264);    /* hover / subtle fill */
+  --color-surface-3: oklch(87% 0.007 264);    /* borders, dividers */
+
+  --color-content-primary:   oklch(10% 0.010 264);
+  --color-content-secondary: oklch(33% 0.012 264);
+  --color-content-tertiary:  oklch(52% 0.010 264);
+
+  /* Accent — wenge: warm tan, same character in both light and dark */
+  --color-accent:        oklch(38% 0.08 48);   /* warm tan-brown, strong contrast on light bg */
+  --color-accent-strong: oklch(73% 0.07 58);   /* light warm tan for filled primary buttons */
+  --color-accent-strong-hover: oklch(68% 0.07 58);
+  --color-accent-dim:    oklch(35% 0.06 48);
+  --color-accent-subtle: oklch(92% 0.03 62);
+  --color-dark-accent:   oklch(73% 0.07 48);   /* warm tan — good contrast (~6:1) on dark surfaces */
+  --color-dark-accent-strong: oklch(50% 0.09 48); /* darker variant for filled primary buttons */
+  --color-dark-accent-strong-hover: oklch(55% 0.09 48);
+
+  /* Dark mode surfaces */
+  --color-dark-surface-0: oklch(14% 0.005 264);
+  --color-dark-surface-1: oklch(16% 0.007 264);
+  --color-dark-surface-2: oklch(20% 0.008 264);
+  --color-dark-surface-3: oklch(27% 0.009 264);
+
+  --color-dark-content-primary:   oklch(90% 0.005 264);
+  --color-dark-content-secondary: oklch(73% 0.010 264);
+  --color-dark-content-tertiary:  oklch(57% 0.008 264);
+
+  --color-dark-accent-subtle: oklch(21% 0.03 48);
+
+  /* Danger — vivid brick red, clearly more urgent than any palette accent */
+  --color-danger-strong: oklch(50% 0.18 22);   /* vivid brick, white text */
+  --color-danger-strong-hover: oklch(45% 0.18 22);
+  --color-dark-danger-strong-hover: oklch(55% 0.18 22);
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Animations */
+  --animate-toast-in: toast-in 0.15s ease-out;
+}
+
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes dialog-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dialog-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes dialog-content-in {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes dialog-content-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.97) translateY(4px); }
+}
+@keyframes dialog-body-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Suppress focus outline on pointer/mouse-initiated focus.
+   Tab-key focus (:focus-visible) retains its indicator.
+   Non-button focusable elements (e.g. folder rows with tabIndex) set :focus-visible
+   on mouse click in Chromium — this rule handles those.
+   The Radix Escape edge case (programmatic focus returning :focus-visible) is
+   handled separately via the global keydown listener in main.tsx. */
+*:focus:not(:focus-visible) { outline: none; }
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-0);
+  color: var(--color-content-primary);
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  overflow: hidden;
+}
+
+html.dark {
+  background-color: var(--color-dark-surface-0);
+  color: var(--color-dark-content-primary);
+}
+
+body { margin: 0; min-height: 100%; height: 100%; overflow: hidden; }
+#root { min-height: 100vh; height: 100%; }
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+/* Webkit (Chrome, Edge, Safari, Wails webview) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-surface-3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-content-tertiary);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-dark-surface-3);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-dark-content-tertiary);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-3) transparent;
+}
+html.dark * {
+  scrollbar-color: var(--color-dark-surface-3) transparent;
+}
+
+/* ── Custom titlebar drag regions ──────────────────────────────────────── */
+.titlebar-drag    { --wails-draggable: drag; }
+.titlebar-no-drag { --wails-draggable: no-drag; }
+
+/* Splash screen animations */
+@keyframes splash-enter {
+  from { opacity: 0; transform: scale(0.72); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splash-exit {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.06); }
+}
+
+@keyframes splash-overlay-exit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes app-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.splash-enter {
+  animation: splash-enter 1.2s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+.splash-exit {
+  animation: splash-exit 0.85s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.splash-overlay-exit {
+  animation: splash-overlay-exit 0.85s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+.app-fade-in {
+  animation: app-fade-in 0.85s ease-out forwards;
+}
