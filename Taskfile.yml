@@ -29,7 +29,7 @@ tasks:
       - 'echo {{.CLI_ARGS}} > VERSION'
       - 'sed -i ''s/"productVersion": ".*"/"productVersion": "{{.CLI_ARGS}}"/'' wails.json'
       - 'sed -i ''s/var Current = ".*"/var Current = "{{.CLI_ARGS}}"/'' internal/version/version.go'
-      - 'sed -i ''s/CURRENT_VERSION = ".*"/CURRENT_VERSION = "{{trimPrefix .CLI_ARGS "v"}}"/'' website/src/data/release.ts'
+      - 'sed -i ''s/CURRENT_VERSION = ".*"/CURRENT_VERSION = "{{trimPrefix "v" .CLI_ARGS}}"/'' website/src/data/release.ts'
       - 'sed -i "s/RELEASE_DATE = \".*\"/RELEASE_DATE = \"$(date +''%B %d, %Y'')\"/" website/src/data/release.ts'
 
   install:

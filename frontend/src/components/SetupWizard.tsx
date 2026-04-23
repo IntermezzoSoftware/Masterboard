@@ -37,9 +37,9 @@ export default function SetupWizard() {
       aria-modal="true"
       aria-label="First-run setup"
     >
-      <div className="w-[520px] max-w-[90vw] rounded-[var(--radius-lg)] border border-[var(--color-surface-3)] dark:border-[var(--color-dark-surface-3)] bg-[var(--color-surface-0)] dark:bg-[var(--color-dark-surface-0)] shadow-2xl overflow-hidden">
+      <div className="w-[520px] max-w-[90vw] max-h-[90vh] flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-surface-3)] dark:border-[var(--color-dark-surface-3)] bg-[var(--color-surface-0)] dark:bg-[var(--color-dark-surface-0)] shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 pt-6 pb-3">
+        <div className="px-6 pt-6 pb-3 shrink-0">
           <h2 className="text-lg font-semibold text-[var(--color-content-primary)] dark:text-[var(--color-dark-content-primary)]">
             {step === 'welcome'   && 'Welcome to Masterboard'}
             {step === 'engine'   && 'Install a chess engine'}
@@ -49,7 +49,7 @@ export default function SetupWizard() {
         </div>
 
         {/* Body */}
-        <div className="px-6 pb-3 text-sm text-[var(--color-content-secondary)] dark:text-[var(--color-dark-content-secondary)]">
+        <div className="px-6 pb-3 text-sm text-[var(--color-content-secondary)] dark:text-[var(--color-dark-content-secondary)] overflow-y-auto flex-1">
           {step === 'welcome' && (
             <p>
               {hadEngineRef.current
@@ -88,7 +88,7 @@ export default function SetupWizard() {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center px-6 py-4 border-t border-[var(--color-surface-2)] dark:border-[var(--color-dark-surface-2)]">
+        <div className="flex justify-between items-center px-6 py-4 border-t border-[var(--color-surface-2)] dark:border-[var(--color-dark-surface-2)] shrink-0">
           <div className="flex gap-1.5">
             {(['welcome', 'engine', 'masterdb', 'done'] as Step[]).map(s => (
               <div
