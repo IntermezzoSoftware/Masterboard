@@ -1,13 +1,16 @@
 import { render, screen, act } from '@testing-library/react'
+import type { ComponentType } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import SplashScreen from './SplashScreen'
 
-// Capture the app:ready listener so tests can fire it manually
-let appReadyListener: (() => void) | null = null
+// vi.hoisted so the ref is available inside the hoisted vi.mock factory
+const { appReadyRef } = vi.hoisted(() => {
+  const appReadyRef = { current: null as (() => void) | null }
+  return { appReadyRef }
+})
 
 vi.mock('@/lib/wailsRuntime', () => ({
   EventsOn: vi.fn((event: string, cb: () => void) => {
-    if (event === 'app:ready') appReadyListener = cb
+    if (event === 'app:ready') appReadyRef.current = cb
     return vi.fn() // unsubscribe
   }),
 }))
@@ -27,10 +30,18 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true })
 
+// SplashScreen registers EventsOn at module load time (not in useEffect), so
+// _appReadyFired/_appReadyQueue are module-level state. Re-import via
+// vi.isolateModules each test to get a fresh module with clean state.
+let SplashScreen: ComponentType<{ onDone: () => void; onExiting?: () => void }>
+
 describe('SplashScreen', () => {
-  beforeEach(() => {
-    appReadyListener = null
+  beforeEach(async () => {
+    appReadyRef.current = null
     localStorageMock.clear()
+    vi.resetModules()
+    const mod = await import('./SplashScreen')
+    SplashScreen = mod.default
     vi.useFakeTimers()
   })
 
@@ -48,7 +59,7 @@ describe('SplashScreen', () => {
     const onDone = vi.fn()
     render(<SplashScreen onDone={onDone} />)
     act(() => { vi.advanceTimersByTime(1749) })
-    appReadyListener?.()
+    appReadyRef.current?.()
     expect(onDone).not.toHaveBeenCalled()
   })
 
@@ -56,7 +67,7 @@ describe('SplashScreen', () => {
     const onDone = vi.fn()
     render(<SplashScreen onDone={onDone} />)
     act(() => { vi.advanceTimersByTime(1750) })
-    act(() => { appReadyListener?.() })
+    act(() => { appReadyRef.current?.() })
     // onDone fires after exit animation (850ms)
     act(() => { vi.advanceTimersByTime(850) })
     expect(onDone).toHaveBeenCalledOnce()
@@ -67,7 +78,7 @@ describe('SplashScreen', () => {
     render(<SplashScreen onDone={onDone} />)
     act(() => { vi.advanceTimersByTime(3000) }) // well past min
     expect(onDone).not.toHaveBeenCalled() // app:ready not fired yet
-    act(() => { appReadyListener?.() })
+    act(() => { appReadyRef.current?.() })
     act(() => { vi.advanceTimersByTime(850) })
     expect(onDone).toHaveBeenCalledOnce()
   })
@@ -77,7 +88,7 @@ describe('SplashScreen', () => {
     const onExiting = vi.fn()
     render(<SplashScreen onDone={onDone} onExiting={onExiting} />)
     act(() => { vi.advanceTimersByTime(1750) })
-    act(() => { appReadyListener?.() })
+    act(() => { appReadyRef.current?.() })
     expect(onExiting).toHaveBeenCalledOnce()
     expect(onDone).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(850) })

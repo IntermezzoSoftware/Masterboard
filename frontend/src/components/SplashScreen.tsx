@@ -5,6 +5,30 @@ import logoFullSvg from '@/assets/logo-full.svg?raw'
 const MIN_MS  = 1750
 const EXIT_MS = 850
 
+// Register the app:ready listener at module load time — before React mounts
+// or commits any effects — so we never miss the event. On macOS, WKWebView
+// fires domReady (and therefore the Go domReady() callback) earlier in the JS
+// execution lifecycle than WebView2 does on Windows, creating a reliable race
+// where app:ready arrives before the useEffect-based listener is registered.
+let _appReadyFired = false
+const _appReadyQueue: Array<() => void> = []
+EventsOn('app:ready', () => {
+  _appReadyFired = true
+  _appReadyQueue.splice(0).forEach(fn => fn())
+})
+
+function onAppReady(fn: () => void): () => void {
+  if (_appReadyFired) {
+    fn()
+    return () => {}
+  }
+  _appReadyQueue.push(fn)
+  return () => {
+    const i = _appReadyQueue.indexOf(fn)
+    if (i !== -1) _appReadyQueue.splice(i, 1)
+  }
+}
+
 function getTheme(): 'dark' | 'light' {
   const stored = localStorage.getItem('masterboard-theme')
   if (stored === 'dark' || stored === 'light') return stored
@@ -36,7 +60,7 @@ export default function SplashScreen({ onDone, onExiting }: { onDone: () => void
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return EventsOn('app:ready', () => {
+    return onAppReady(() => {
       appReadyRef.current = true
       maybeExit()
     })
