@@ -26,9 +26,11 @@ var (
 )
 
 // setTitleBarTheme swaps the window icon (taskbar + title bar corner) to match
-// the current theme. With a frameless window there is no native caption to
-// style, so DWM attribute calls are no longer needed.
-func setTitleBarTheme(dark bool, lightIcon, darkIcon []byte) {
+// the current theme. Dark mode shows the white icon so it stays visible
+// against a dark taskbar; light mode shows the black icon for the opposite
+// reason. With a frameless window there is no native caption to style, so DWM
+// attribute calls are no longer needed.
+func setTitleBarTheme(dark bool, blackIcon, whiteIcon []byte) {
 	title, err := syscall.UTF16PtrFromString("Masterboard")
 	if err != nil {
 		return
@@ -38,9 +40,9 @@ func setTitleBarTheme(dark bool, lightIcon, darkIcon []byte) {
 		return
 	}
 
-	icon := darkIcon
-	if !dark {
-		icon = lightIcon
+	icon := blackIcon
+	if dark {
+		icon = whiteIcon
 	}
 	if len(icon) > 0 {
 		setWindowIcon(hwnd, icon)

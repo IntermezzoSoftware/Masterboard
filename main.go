@@ -76,7 +76,7 @@ func main() {
 			About: &mac.AboutInfo{
 				Title:   "Masterboard",
 				Message: "© 2026 Intermezzo Software\nhttps://masterboard.io",
-				Icon:    appIconDark,
+				Icon:    appIconBlack,
 			},
 			OnUrlOpen: app.handleOAuthCallback,
 		},

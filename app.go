@@ -30,11 +30,15 @@ import (
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// Named by icon colour, not by the mode they're shown in: appIconBlack is the
+// black-on-transparent mark (visible against light taskbars / About panels),
+// appIconWhite is the white-on-transparent mark (visible against dark taskbars).
+//
 //go:embed build/appicon.png
-var appIconDark []byte
+var appIconBlack []byte
 
-//go:embed build/appicon-light.png
-var appIconLight []byte
+//go:embed build/appicon-white.png
+var appIconWhite []byte
 
 // App is the main application struct. Public methods on App are exposed
 // to the React frontend as JavaScript bindings via Wails.
@@ -272,7 +276,7 @@ func (a *App) GetPlatform() string {
 }
 
 func (a *App) SetTitleBarTheme(dark bool) {
-	setTitleBarTheme(dark, appIconLight, appIconDark)
+	setTitleBarTheme(dark, appIconBlack, appIconWhite)
 }
 
 func (a *App) startupEngine() {

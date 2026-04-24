@@ -7,6 +7,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-04-24
+### Fixed
+- Fix icon theme responsiveness
+
 ## [0.6.5] - 2026-04-24
 ### Fixed
 - Various Mac usability fixes, especially Engine downloads and integration
