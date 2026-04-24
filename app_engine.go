@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -226,12 +227,22 @@ func (a *App) ListEngines() ([]string, error) {
 }
 
 func (a *App) BrowseForEngine() (string, error) {
-	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
-		Title: "Select UCI engine binary",
-		Filters: []wailsRuntime.FileFilter{
+	var filters []wailsRuntime.FileFilter
+	if runtime.GOOS == "windows" {
+		filters = []wailsRuntime.FileFilter{
 			{DisplayName: "Executables (*.exe)", Pattern: "*.exe"},
 			{DisplayName: "All files", Pattern: "*"},
-		},
+		}
+	} else {
+		// Unix engine binaries usually have no extension — default to showing
+		// everything so the user can pick the binary without hunting for a filter.
+		filters = []wailsRuntime.FileFilter{
+			{DisplayName: "All files", Pattern: "*"},
+		}
+	}
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title:   "Select UCI engine binary",
+		Filters: filters,
 	})
 	if err != nil {
 		return "", err
@@ -592,6 +603,16 @@ func (a *App) DownloadEngine(engineID string) error {
 	namePath := filepath.Join(destDir, "engine-name.txt")
 	if writeErr := os.WriteFile(namePath, []byte(displayName), 0644); writeErr != nil {
 		log.Printf("[engine] warning: could not write engine-name.txt: %v", writeErr)
+	}
+
+	// Lc0 needs `--weights=<path>` at launch because auto-discovery doesn't
+	// recurse into our networks/ subdirectory. Write a sidecar so process.go
+	// can append the flag. paths[1] is the network (bundled or separate).
+	if strings.HasPrefix(engineID, "lc0-") && len(paths) >= 2 {
+		weightsSidecar := binaryPath + ".weights"
+		if writeErr := os.WriteFile(weightsSidecar, []byte(paths[1]), 0644); writeErr != nil {
+			log.Printf("[engine] warning: could not write weights sidecar: %v", writeErr)
+		}
 	}
 
 	if err := a.AddCustomEngine(binaryPath); err != nil {

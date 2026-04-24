@@ -1013,6 +1013,16 @@ export default function ReportsPage() {
               onChange={e => handleQueryChange(e.target.value)}
               onFocus={() => { if (suggestions.length > 0) setDropdownOpen(true) }}
               onBlur={() => { setTimeout(() => setDropdownOpen(false), 150) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && suggestions.length > 0) {
+                  e.preventDefault()
+                  handleSelect(suggestions[0])
+                }
+              }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               className="flex-1 bg-transparent text-sm text-[var(--color-content-primary)] dark:text-[var(--color-dark-content-primary)] placeholder:text-[var(--color-content-secondary)] dark:placeholder:text-[var(--color-dark-content-secondary)] outline-none"
             />
             {(query || selectedPlayer) && (
@@ -1090,7 +1100,7 @@ export default function ReportsPage() {
             <ColourSection asWhite={stats.asWhite} asBlack={stats.asBlack} />
 
             <OpeningSection
-              data={stats.byOpening}
+              data={stats.byOpening ?? []}
               variationRows={variationRows}
               onOpeningClick={handleOpeningClick}
               onEcoClick={handleEcoClick}

@@ -932,9 +932,8 @@ export default function SettingsPage() {
                 Import a PGN collection to power the opening explorer. We recommend{' '}
                 <a
                   href="https://lumbrasgigabase.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline text-[var(--color-accent)] hover:opacity-80"
+                  onClick={e => { e.preventDefault(); api.openURL('https://lumbrasgigabase.com') }}
+                  className="underline text-[var(--color-accent)] hover:opacity-80 cursor-pointer"
                 >
                   Lumbra's Gigabase
                 </a>

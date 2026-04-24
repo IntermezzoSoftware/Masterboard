@@ -22,6 +22,7 @@ vi.mock('@/lib/wailsRuntime', () => ({
   WindowMinimise: vi.fn(),
   WindowToggleMaximise: vi.fn(),
   WindowIsMaximised: vi.fn().mockResolvedValue(false),
+  WindowIsFullscreen: vi.fn().mockResolvedValue(false),
   Quit: vi.fn(),
 }))
 

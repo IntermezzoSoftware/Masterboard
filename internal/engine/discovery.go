@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,9 +10,11 @@ import (
 )
 
 // isEngineExecutable reports whether the file at path looks like a UCI engine
-// binary. On Windows, only .exe files qualify. On other platforms, the
-// executable bit must be set — extension alone is not sufficient because
-// engine zips (e.g. lc0) contain extension-less text files (README, LICENSE).
+// binary. On Windows, only .exe files qualify. On Mac/Linux the file must be
+// a regular executable AND start with ELF or Mach-O magic bytes — the +x check
+// alone is not enough, because engine archives ship chmodded helper scripts
+// (net.sh, get_native_properties.sh) and Makefiles that would otherwise
+// register as engines.
 func isEngineExecutable(path, name string) bool {
 	if strings.HasPrefix(name, ".") {
 		return false
@@ -23,7 +26,42 @@ func isEngineExecutable(path, name string) bool {
 	if err != nil {
 		return false
 	}
-	return info.Mode().IsRegular() && info.Mode()&0111 != 0
+	if !info.Mode().IsRegular() || info.Mode()&0111 == 0 {
+		return false
+	}
+	return hasNativeExecutableMagic(path)
+}
+
+// hasNativeExecutableMagic returns true if the file starts with ELF or Mach-O
+// (including fat/universal) magic bytes. PE binaries are intentionally excluded
+// on non-Windows: Windows .exe files cannot execute on Mac/Linux and should
+// not be registered as engines there.
+func hasNativeExecutableMagic(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	var hdr [4]byte
+	n, _ := io.ReadFull(f, hdr[:])
+	if n < 4 {
+		return false
+	}
+	switch {
+	case hdr[0] == 0x7f && hdr[1] == 'E' && hdr[2] == 'L' && hdr[3] == 'F':
+		return true
+	case hdr[0] == 0xce && hdr[1] == 0xfa && hdr[2] == 0xed && hdr[3] == 0xfe:
+		return true
+	case hdr[0] == 0xcf && hdr[1] == 0xfa && hdr[2] == 0xed && hdr[3] == 0xfe:
+		return true
+	case hdr[0] == 0xfe && hdr[1] == 0xed && hdr[2] == 0xfa && hdr[3] == 0xce:
+		return true
+	case hdr[0] == 0xfe && hdr[1] == 0xed && hdr[2] == 0xfa && hdr[3] == 0xcf:
+		return true
+	case hdr[0] == 0xca && hdr[1] == 0xfe && hdr[2] == 0xba && hdr[3] == 0xbe:
+		return true
+	}
+	return false
 }
 
 func findBundledEngines(baseDir string) []string {

@@ -34,6 +34,11 @@ export async function WindowIsMaximised(): Promise<boolean> {
   return (window as any).runtime?.WindowIsMaximised() ?? false
 }
 
+/** Returns whether the window is currently in native fullscreen. */
+export async function WindowIsFullscreen(): Promise<boolean> {
+  return (window as any).runtime?.WindowIsFullscreen() ?? false
+}
+
 /** Quit the application. */
 export function Quit(): void {
   ;(window as any).runtime?.Quit()

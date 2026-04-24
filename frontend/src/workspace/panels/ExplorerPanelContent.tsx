@@ -336,6 +336,10 @@ function PlayerAutocomplete({ value, onChange, disabled }: PlayerAutocompletePro
         onChange={e => handleInput(e.target.value)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         className={`${inputClass} w-full ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
       />
       {open && !disabled && (

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
@@ -53,7 +54,11 @@ func main() {
 		Title:       "Masterboard",
 		Width:       1280,
 		Height:      800,
-		Frameless:   true,
+		// On macOS we keep the native window chrome so the traffic-light buttons
+		// remain visible; mac.TitleBarHiddenInset() below makes the titlebar
+		// transparent so our custom titlebar still renders at the top. On
+		// Windows/Linux we use a frameless window and draw our own chrome.
+		Frameless:   runtime.GOOS != "darwin",
 		StartHidden: hasSavedGeometry,
 		AssetServer: &assetserver.Options{
 			Assets: assets,

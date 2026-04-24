@@ -217,7 +217,7 @@ export async function installBridge(page: Page, folders = MOCK_FOLDERS, options:
       LogPrint: () => {}, LogTrace: () => {}, LogDebug: () => {},
       LogInfo: () => {}, LogWarning: () => {}, LogError: () => {}, LogFatal: () => {},
       WindowMinimise: () => {}, WindowToggleMaximise: () => {},
-      WindowIsMaximised: () => false, Quit: () => {},
+      WindowIsMaximised: () => false, WindowIsFullscreen: () => false, Quit: () => {},
     }
 
     let _folders = data.folders

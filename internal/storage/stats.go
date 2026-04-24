@@ -286,7 +286,7 @@ func (d *DB) timeControlResults(f StatsFilters, joins string, baseWhere []string
 	}
 
 	order := []string{"bullet", "blitz", "rapid", "classical", "other"}
-	var result []TimeControlResults
+	result := []TimeControlResults{}
 	for _, cat := range order {
 		if b, ok := buckets[cat]; ok && b.total > 0 {
 			result = append(result, TimeControlResults{
@@ -369,7 +369,7 @@ func (d *DB) openingPerformance(f StatsFilters, joins string, baseWhere []string
 	}
 	defer rows.Close()
 
-	var result []OpeningRow
+	result := []OpeningRow{}
 	for rows.Next() {
 		var row OpeningRow
 		var playerWins, draws, asWhite, asBlack, whiteWins, whiteDraws, blackWins, blackDraws, total int
@@ -472,7 +472,7 @@ func (d *DB) openingVariationPerformance(f StatsFilters, joins string, baseWhere
 	}
 	defer rows.Close()
 
-	var result []OpeningRow
+	result := []OpeningRow{}
 	for rows.Next() {
 		var row OpeningRow
 		var playerWins, draws, asWhite, asBlack, whiteWins, whiteDraws, blackWins, blackDraws, total int

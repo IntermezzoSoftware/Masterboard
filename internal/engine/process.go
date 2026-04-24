@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"strings"
 )
 
 // osEnginePipe wraps an engine subprocess with line-oriented I/O.
@@ -14,11 +16,27 @@ type osEnginePipe struct {
 	scanner *bufio.Scanner
 }
 
+// buildEngineArgs returns the argv extension for the engine binary at path.
+// If a `<path>.weights` sidecar exists and is non-empty, its content is passed
+// as `--weights=<content>` — needed for Lc0, whose auto-discovery does not
+// recurse into our `networks/` subdirectory.
+func buildEngineArgs(path string) []string {
+	data, err := os.ReadFile(path + ".weights")
+	if err != nil {
+		return nil
+	}
+	weights := strings.TrimSpace(string(data))
+	if weights == "" {
+		return nil
+	}
+	return []string{"--weights=" + weights}
+}
+
 // newOsEnginePipe starts the engine at path and returns a ready pipe.
 // If lowPriority is true the process is launched at below-normal priority
 // so interactive processes are always preferred by the OS scheduler.
 func newOsEnginePipe(path string, lowPriority bool) (*osEnginePipe, error) {
-	cmd := exec.Command(path)
+	cmd := exec.Command(path, buildEngineArgs(path)...)
 	configureSysProcAttr(cmd)
 
 	stdin, err := cmd.StdinPipe()

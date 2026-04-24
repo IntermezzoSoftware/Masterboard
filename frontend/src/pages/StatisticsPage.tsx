@@ -1697,9 +1697,9 @@ export default function StatisticsPage() {
                     </>
                   )
                 })()}
-                <TimeControlSection data={stats.byTimeControl} hasIdentity={(filters.playerNames?.length ?? 0) > 0} />
+                <TimeControlSection data={stats.byTimeControl ?? []} hasIdentity={(filters.playerNames?.length ?? 0) > 0} />
                 <OpeningSection
-                  data={stats.byOpening}
+                  data={stats.byOpening ?? []}
                   hasIdentity={(filters.playerNames?.length ?? 0) > 0}
                   variationRows={variationRows}
                   onOpeningClick={handleOpeningClick}

@@ -20,10 +20,25 @@ func (a *App) GetDeviationPositions(playerNames []string) ([]storage.DeviationRo
 	if err := a.requireDB(); err != nil {
 		return nil, err
 	}
+	// Assign to an interface variable only when the concrete pointer is non-nil.
+	// Passing a typed-nil *masterdb.DB directly would make the interface itself
+	// non-nil (it carries type info), breaking the `mdb == nil` guard inside
+	// GetDeviationPositions and panicking on the first method call — which is
+	// exactly what happens when no master DB is installed.
+	var mdb storage.MasterDB
 	a.masterDBMu.Lock()
-	mdb := a.masterDB
+	if a.masterDB != nil {
+		mdb = a.masterDB
+	}
 	a.masterDBMu.Unlock()
-	return storage.GetDeviationPositions(a.db, mdb, playerNames, 10)
+	rows, err := storage.GetDeviationPositions(a.db, mdb, playerNames, 10)
+	if err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		rows = []storage.DeviationRow{}
+	}
+	return rows, nil
 }
 
 func (a *App) GetRepertoireDeviations(playerNames []string) ([]storage.RepertoireDeviationRow, error) {

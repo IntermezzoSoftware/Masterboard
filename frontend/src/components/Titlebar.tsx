@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router'
 import { Minus, Square, Copy, X, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
-import { WindowMinimise, WindowToggleMaximise, WindowIsMaximised, Quit } from '@/lib/wailsRuntime'
+import { WindowMinimise, WindowToggleMaximise, WindowIsMaximised, WindowIsFullscreen, Quit } from '@/lib/wailsRuntime'
 import { useTitlebar, useToolbarPortalRef, useToolbarLeftPortalRef, type BreadcrumbSegment } from '@/context/TitlebarContext'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -80,6 +80,7 @@ function BreadcrumbSegmentItem({ seg, isFirst, isLast }: { seg: BreadcrumbSegmen
 export default function Titlebar({ navCollapsed }: { navCollapsed?: boolean }) {
   const [platform, setPlatform] = useState<string>('windows')
   const [maximised, setMaximised] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const { breadcrumb, setCompact } = useTitlebar()
   const { theme } = useTheme()
   const ctxToolbarRef     = useToolbarPortalRef()
@@ -155,10 +156,11 @@ export default function Titlebar({ navCollapsed }: { navCollapsed?: boolean }) {
     api.getPlatform().then(setPlatform).catch(() => {})
   }, [])
 
-  // Poll maximised state (Wails v2 has no window-state-change event).
+  // Poll maximised + fullscreen state (Wails v2 has no window-state-change event).
   useEffect(() => {
     const poll = setInterval(() => {
       WindowIsMaximised().then(setMaximised).catch(() => {})
+      WindowIsFullscreen().then(setFullscreen).catch(() => {})
     }, 500)
     return () => clearInterval(poll)
   }, [])
@@ -176,10 +178,18 @@ export default function Titlebar({ navCollapsed }: { navCollapsed?: boolean }) {
       data-testid="titlebar"
       onDoubleClick={handleToggleMaximise}
       className="titlebar-drag flex items-center h-10 shrink-0 bg-[var(--color-surface-1)] dark:bg-[var(--color-dark-surface-1)] border-b border-[var(--color-surface-3)] dark:border-[var(--color-dark-surface-3)] select-none"
-      style={platform === 'darwin' ? { paddingLeft: 70 } : undefined}
     >
-      {/* Left: mark + breadcrumb — fixed width matching sidebar */}
-      <div ref={leftSectionRef} className="flex items-center gap-2 pl-5 min-w-0 overflow-hidden shrink-0 transition-[width] duration-200" style={{ width: 'var(--sidebar-width)' }}>
+      {/* Left: mark + breadcrumb — fixed width matching sidebar. On macOS we
+          push the inner content right by the width of the native traffic-light
+          buttons (~70 px) so the mark doesn't sit under them; the section
+          still occupies `--sidebar-width` so every portal / spacer to its
+          right keeps the same alignment as on Windows/Linux. In fullscreen
+          the traffic lights auto-hide, so collapse the inset back to 20 px. */}
+      <div
+        ref={leftSectionRef}
+        className="flex items-center gap-2 min-w-0 overflow-hidden shrink-0 transition-[width,padding] duration-200"
+        style={{ width: 'var(--sidebar-width)', paddingLeft: platform === 'darwin' && !fullscreen ? 90 : 20 }}
+      >
         <img
           src={theme === 'dark' ? '/mark-dark.png' : '/mark-light.png'}
           alt="Masterboard"
@@ -195,8 +205,14 @@ export default function Titlebar({ navCollapsed }: { navCollapsed?: boolean }) {
       {/* Spacer */}
       <div className="flex-1 h-full" />
 
-      {/* Right-aligned per-page toolbar content (portal target) */}
-      <div ref={toolbarRef} className="titlebar-no-drag flex items-center gap-1 shrink-0" />
+      {/* Right-aligned per-page toolbar content (portal target). On macOS there
+          are no window controls to the right, so add a small inset to keep the
+          last button clear of the rounded corner. */}
+      <div
+        ref={toolbarRef}
+        className="titlebar-no-drag flex items-center gap-1 shrink-0"
+        style={{ paddingRight: platform === 'darwin' ? 12 : 0 }}
+      />
 
       {/* Right: window controls — pl-2 provides the gap between the right portal and the
           first control button; keeping it here (rather than mr-2 on the portal) ensures

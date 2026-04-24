@@ -59,8 +59,10 @@ export default function AppLayout() {
       className="flex flex-col h-full bg-[var(--color-surface-0)] dark:bg-[var(--color-dark-surface-0)]"
       style={{ '--sidebar-width': sidebarWidth } as React.CSSProperties}
     >
-      <UpdateBanner />
+      {/* Titlebar must come first so the macOS traffic-light buttons (drawn by
+          the OS at the top of the window) don't overlap the UpdateBanner. */}
       <Titlebar navCollapsed={navCollapsed} />
+      <UpdateBanner />
       <div className="flex flex-1 overflow-hidden">
         <aside
           aria-label="Main navigation"

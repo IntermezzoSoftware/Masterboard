@@ -7,6 +7,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-04-24
+### Fixed
+- Various Mac usability fixes, especially Engine downloads and integration
+
 ## [0.6.3] - 2026-04-21
 ### Fixed
 - Mac startup fix
