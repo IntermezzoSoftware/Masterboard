@@ -59,7 +59,7 @@ export const MOCK_GAMES = [
     event: 'World Championship',
     eco: 'B20',
     opening: 'Sicilian',
-    timeControl: '40/7200',
+    timeControl: '60+0',
     source: 'pgn',
     folderId: null,
     collectionNames: [],
@@ -75,7 +75,7 @@ export const MOCK_GAMES = [
     event: 'World Championship',
     eco: 'D86',
     opening: 'Grunfeld',
-    timeControl: '40/7200',
+    timeControl: '1800+0',
     source: 'lichess',
     folderId: null,
     collectionNames: ['Classics'],
@@ -237,6 +237,21 @@ export async function installBridge(page: Page, folders = MOCK_FOLDERS, options:
         if (filters?.source) result = result.filter((g: any) => g.source === filters.source)
         if (filters?.folderId) result = result.filter((g: any) => g.folderId === filters.folderId)
         if (filters?.unfiled) result = result.filter((g: any) => !g.folderId)
+        if (filters?.timeControls && filters.timeControls.length > 0) {
+          const cats: string[] = filters.timeControls
+          // Mirrors game.CategorizeTimeControl in internal/game/timecontrol.go.
+          const categorize = (tc: string): string => {
+            if (!tc || tc === '-' || tc === '?' || tc === '∞') return 'other'
+            const head = tc.split('+')[0]
+            const secs = parseInt(head, 10)
+            if (!Number.isFinite(secs) || secs <= 0) return 'other'
+            if (secs < 180)  return 'bullet'
+            if (secs < 600)  return 'blitz'
+            if (secs < 1800) return 'rapid'
+            return 'classical'
+          }
+          result = result.filter((g: any) => cats.indexOf(categorize(g.timeControl ?? '')) !== -1)
+        }
         return result
       },
       GetGame:      async () => null,

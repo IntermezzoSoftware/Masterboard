@@ -103,6 +103,7 @@ export interface GameFilters {
   includeSubfolders?: boolean
   unfiled?: boolean
   playerNames?: string[]
+  timeControls?: string[]  // categories: bullet/blitz/rapid/classical/other; OR-matched
   limit?: number
   offset?: number
 }

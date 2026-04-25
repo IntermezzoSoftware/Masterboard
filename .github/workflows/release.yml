@@ -78,7 +78,7 @@ jobs:
       - name: Generate Windows icons
         run: |
           magick build/appicon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/icon.ico
-          magick build/appicon-light.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/installer-icon.ico
+          magick build/appicon-white.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/installer-icon.ico
           magick build/pgn-icon.png -define icon:auto-resize=256,128,64,48,32,16 build/windows/pgn-icon.ico
         shell: bash
 

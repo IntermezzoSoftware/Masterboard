@@ -22,7 +22,7 @@ import { Dialog, DialogClose } from '@/components/Dialog'
 import { Checkbox } from '@/components/Checkbox'
 import { useToast } from '@/context/ToastContext'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { btnSecondary, btnDanger, btnGhost, btnTitlebarSecondary, btnTitlebarDanger, menuContent, menuItemNormal, menuItemDestructive, menuSeparator } from '@/lib/classNames'
+import { btnSecondary, btnDanger, btnGhost, btnTitlebarSecondary, btnTitlebarDanger, menuContent, menuItemNormal, menuItemDestructive, menuSeparator, collectionToggle, collectionToggleActive } from '@/lib/classNames'
 import { Select } from '@/components/Select'
 import { DatePicker } from '@/components/DatePicker'
 import { useColumnResize } from '@/hooks/useColumnResize'
@@ -65,6 +65,14 @@ const COL_ORDER_LS_KEY = 'masterboard.gamesColOrder'
 
 const SORT_COL_SET = new Set<ColKey>(['white', 'black', 'result', 'date', 'event', 'eco'])
 
+const TIME_CONTROL_FILTER_OPTIONS = [
+  { value: 'bullet',    label: 'Bullet'    },
+  { value: 'blitz',     label: 'Blitz'     },
+  { value: 'rapid',     label: 'Rapid'     },
+  { value: 'classical', label: 'Classical' },
+  { value: 'other',     label: 'Other'     },
+]
+
 interface Filters {
   player: string
   result: string
@@ -72,6 +80,7 @@ interface Filters {
   collectionId: string
   dateFrom: string
   dateTo: string
+  timeControls: string[]
 }
 
 interface SavedViewState {
@@ -128,7 +137,7 @@ export default function GamesPage() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [filters, setFilters]     = useState<Filters>(
-    savedViewState?.filters ?? { player: '', result: '', source: '', collectionId: '', dateFrom: '', dateTo: '' }
+    savedViewState?.filters ?? { player: '', result: '', source: '', collectionId: '', dateFrom: '', dateTo: '', timeControls: [] }
   )
   const [collections, setCollections] = useState<Collection[]>([])
   const [folders, setFolders]     = useState<Folder[]>([])
@@ -249,6 +258,7 @@ export default function GamesPage() {
         collectionId:      filters.collectionId || undefined,
         dateFrom:          filters.dateFrom      || undefined,
         dateTo:            filters.dateTo        || undefined,
+        timeControls:      filters.timeControls.length > 0 ? filters.timeControls : undefined,
         folderId:          folderSelection.type === 'folder' ? folderSelection.id : undefined,
         includeSubfolders: folderSelection.type === 'folder' ? true : undefined,
         unfiled:           folderSelection.type === 'unfiled' ? true : undefined,
@@ -632,9 +642,30 @@ export default function GamesPage() {
                   />
                 </div>
 
-                {(myselfActive || filters.player !== '' || filters.result !== '' || filters.source !== '' || filters.collectionId !== '' || filters.dateFrom !== '' || filters.dateTo !== '') && (
+                <div className="grid grid-cols-2 gap-1">
+                  {TIME_CONTROL_FILTER_OPTIONS.map(o => {
+                    const active = filters.timeControls.includes(o.value)
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => setFilters(f => ({
+                          ...f,
+                          timeControls: active
+                            ? f.timeControls.filter(v => v !== o.value)
+                            : [...f.timeControls, o.value],
+                        }))}
+                        className={`${active ? collectionToggleActive : collectionToggle} text-center`}
+                      >
+                        {o.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {(myselfActive || filters.player !== '' || filters.result !== '' || filters.source !== '' || filters.collectionId !== '' || filters.dateFrom !== '' || filters.dateTo !== '' || filters.timeControls.length > 0) && (
                   <button
-                    onClick={() => { setFilters({ player: '', result: '', source: '', collectionId: '', dateFrom: '', dateTo: '' }); setMyselfActive(false) }}
+                    onClick={() => { setFilters({ player: '', result: '', source: '', collectionId: '', dateFrom: '', dateTo: '', timeControls: [] }); setMyselfActive(false) }}
                     title="Clear filters"
                     className={`${btnGhost} w-full justify-center`}
                   >

@@ -7,6 +7,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-04-25
+### Added
+- Time control filters on Games page
+
 ## [0.6.6] - 2026-04-24
 ### Fixed
 - Fix icon theme responsiveness

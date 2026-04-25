@@ -93,6 +93,35 @@ test.describe('filtering', () => {
     await expect(page.getByText('Kasparov')).toBeVisible()
     await expect(page.getByText('Fischer')).toBeVisible()
   })
+
+  test('selecting Bullet hides classical games and vice versa', async ({ gamesListPage: page }) => {
+    // MOCK_GAMES: Kasparov=60+0 (bullet), Fischer=1800+0 (classical)
+    await page.getByRole('button', { name: 'Bullet' }).click()
+    await expect(page.getByText('Kasparov')).toBeVisible()
+    await expect(page.getByText('Fischer')).not.toBeVisible()
+    // Toggle off
+    await page.getByRole('button', { name: 'Bullet' }).click()
+    await expect(page.getByText('Fischer')).toBeVisible()
+    // Classical alone shows Fischer
+    await page.getByRole('button', { name: 'Classical' }).click()
+    await expect(page.getByText('Fischer')).toBeVisible()
+    await expect(page.getByText('Kasparov')).not.toBeVisible()
+  })
+
+  test('selecting multiple time controls is OR-matched', async ({ gamesListPage: page }) => {
+    await page.getByRole('button', { name: 'Bullet' }).click()
+    await page.getByRole('button', { name: 'Classical' }).click()
+    await expect(page.getByText('Kasparov')).toBeVisible()
+    await expect(page.getByText('Fischer')).toBeVisible()
+  })
+
+  test('Reset clears time control filter', async ({ gamesListPage: page }) => {
+    await page.getByRole('button', { name: 'Bullet' }).click()
+    await expect(page.getByText('Fischer')).not.toBeVisible()
+    await page.getByRole('button', { name: 'Reset' }).click()
+    await expect(page.getByText('Fischer')).toBeVisible()
+    await expect(page.getByText('Kasparov')).toBeVisible()
+  })
 })
 
 

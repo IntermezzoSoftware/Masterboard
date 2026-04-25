@@ -188,8 +188,8 @@ export function useEngineAnalysis(fen: string, slot: 'primary' | 'secondary' = '
     fenRestartRef.current = window.setTimeout(() => {
       pendingRestartRef.current = false
       analysisFenRef.current = fen
+      setAnalysisFen(fen)
       startTransition(() => {
-        setAnalysisFen(fen)
         setLines([])
         setCurrentDepth(0)
       })

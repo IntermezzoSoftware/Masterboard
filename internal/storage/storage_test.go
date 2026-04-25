@@ -450,6 +450,54 @@ func TestListGamesFilterByPlayerNames(t *testing.T) {
 }
 
 
+func TestListGamesFilterByTimeControls(t *testing.T) {
+	db := openTestDB(t)
+
+	// One game per category boundary, plus an "other" with unparseable TC.
+	mk := func(srcID, white, tc string) {
+		g := sampleGame()
+		g.SourceID = srcID
+		g.White = white
+		g.TimeControl = tc
+		g.PGN = fmt.Sprintf("[White %q]\n[TimeControl %q]\n\n1. e4 e5 1-0", white, tc)
+		if _, err := db.SaveGame(g); err != nil {
+			t.Fatalf("SaveGame %s: %v", srcID, err)
+		}
+	}
+	mk("tc-bullet", "Bullet-Player", "60+0")
+	mk("tc-blitz", "Blitz-Player", "300+2")
+	mk("tc-rapid", "Rapid-Player", "600+0")
+	mk("tc-classical", "Classical-Player", "1800+30")
+	mk("tc-other", "Other-Player", "-")
+
+	cases := []struct {
+		name string
+		cats []string
+		want int
+	}{
+		{"bullet only", []string{"bullet"}, 1},
+		{"blitz only", []string{"blitz"}, 1},
+		{"rapid only", []string{"rapid"}, 1},
+		{"classical only", []string{"classical"}, 1},
+		{"other only", []string{"other"}, 1},
+		{"bullet+blitz", []string{"bullet", "blitz"}, 2},
+		{"all five", []string{"bullet", "blitz", "rapid", "classical", "other"}, 5},
+		{"empty means no filter", []string{}, 5},
+		{"unknown category ignored", []string{"unknown"}, 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			games, err := db.ListGames(game.GameFilters{TimeControls: tc.cats, Limit: -1})
+			if err != nil {
+				t.Fatalf("ListGames: %v", err)
+			}
+			if len(games) != tc.want {
+				t.Fatalf("got %d games, want %d", len(games), tc.want)
+			}
+		})
+	}
+}
+
 func TestGetSettingMissing(t *testing.T) {
 	db := openTestDB(t)
 	val, err := db.GetSetting("nonexistent")

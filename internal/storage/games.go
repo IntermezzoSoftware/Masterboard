@@ -439,6 +439,43 @@ func buildListQuery(f game.GameFilters) (string, []any) {
 		args = append(args, lowers...)
 		args = append(args, lowers...)
 	}
+	if len(f.TimeControls) > 0 {
+		// Parse base seconds from time_control ("600+0" -> 600, "300" -> 300).
+		// Must mirror game.CategorizeTimeControl: bullet <180, blitz [180,600),
+		// rapid [600,1800), classical >=1800, other = anything that doesn't parse
+		// to a positive integer (NULL/''/'-'/'?'/non-numeric).
+		const baseSecsExpr = `CAST(
+			CASE
+				WHEN g.time_control IS NULL THEN ''
+				WHEN instr(g.time_control, '+') > 0
+					THEN substr(g.time_control, 1, instr(g.time_control, '+') - 1)
+				ELSE g.time_control
+			END AS INTEGER)`
+		seen := map[string]bool{}
+		var ors []string
+		for _, c := range f.TimeControls {
+			if seen[c] {
+				continue
+			}
+			seen[c] = true
+			switch c {
+			case "bullet":
+				ors = append(ors, "("+baseSecsExpr+" > 0 AND "+baseSecsExpr+" < 180)")
+			case "blitz":
+				ors = append(ors, "("+baseSecsExpr+" >= 180 AND "+baseSecsExpr+" < 600)")
+			case "rapid":
+				ors = append(ors, "("+baseSecsExpr+" >= 600 AND "+baseSecsExpr+" < 1800)")
+			case "classical":
+				ors = append(ors, "("+baseSecsExpr+" >= 1800)")
+			case "other":
+				// CAST of a non-numeric string yields 0 in SQLite; this also covers NULL/''/'-'/'?'.
+				ors = append(ors, "("+baseSecsExpr+" <= 0)")
+			}
+		}
+		if len(ors) > 0 {
+			where = append(where, "("+strings.Join(ors, " OR ")+")")
+		}
+	}
 	if f.Unfiled {
 		where = append(where, "g.folder_id IS NULL")
 	} else if f.FolderID != "" {

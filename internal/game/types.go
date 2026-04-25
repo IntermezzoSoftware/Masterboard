@@ -80,6 +80,7 @@ type GameFilters struct {
 	IncludeSubfolders bool   `json:"includeSubfolders"` // include games in descendant folders too
 	Unfiled           bool     `json:"unfiled"`           // filter to games with no folder
 	PlayerNames       []string `json:"playerNames"`       // exact case-insensitive OR match (used for "Myself" multi-identity)
+	TimeControls      []string `json:"timeControls"`      // categories: bullet/blitz/rapid/classical/other; OR-matched
 	Limit             int      `json:"limit"`
 	Offset            int      `json:"offset"`
 }
